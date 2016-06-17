@@ -328,7 +328,7 @@ DEPLOYMENT_COMPRESS_ORIG_DIR_SIZE=$(du -hs $APP_SOURCE | awk '{ print $1}')
 APP_LOCAL_TEMP_FILE="/tmp/$APP_LOCAL_FILE"
 
 h1 "Step 6: Compressing Source Contents"
-if [ -z "$AWS_CODE_DEPLOY_FILENAME" ]; then
+if [ -n "$AWS_CODE_DEPLOY_FILENAME" ]; then
   if [ ! -e "$AWS_CODE_DEPLOY_FILENAME" ]; then
     error "The specified revision \"${AWS_CODE_DEPLOY_FILENAME}\" does not exist."
     exit 1

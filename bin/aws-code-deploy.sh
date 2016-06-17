@@ -328,23 +328,31 @@ DEPLOYMENT_COMPRESS_ORIG_DIR_SIZE=$(du -hs $APP_SOURCE | awk '{ print $1}')
 APP_LOCAL_TEMP_FILE="/tmp/$APP_LOCAL_FILE"
 
 h1 "Step 6: Compressing Source Contents"
-if [ ! -d "$APP_SOURCE" ]; then
-  error "The specified source directory \"${APP_SOURCE}\" does not exist."
-  exit 1
-fi
-if [ ! -e "$APP_SOURCE/appspec.yml" ]; then
-  error "The specified source directory \"${APP_SOURCE}\" does not contain an \"appspec.yml\" in the application root."
-  exit 1
-fi
-if ! typeExists "zip"; then
-  note "Installing zip binaries ..."
-  sudo apt-get install -y zip
-  note "Zip binaries installed."
-fi
-runCommand "cd \"$APP_SOURCE\" && zip -rq \"${APP_LOCAL_TEMP_FILE}\" ." \
-           "Unable to compress \"$APP_SOURCE\"" 
-DEPLOYMENT_COMPRESS_FILESIZE=$(ls -lah "${APP_LOCAL_TEMP_FILE}" | awk '{ print $5}')
-success "Successfully compressed \"$APP_SOURCE\" ($DEPLOYMENT_COMPRESS_ORIG_DIR_SIZE) into \"$APP_LOCAL_FILE\" ($DEPLOYMENT_COMPRESS_FILESIZE)"
+if [ -z "$AWS_CODE_DEPLOY_FILENAME" ]; then
+  if [ ! -e "$AWS_CODE_DEPLOY_FILENAME" ]; then
+    error "The specified revision \"${AWS_CODE_DEPLOY_FILENAME}\" does not exist."
+    exit 1
+  fi
+  APP_LOCAL_TEMP_FILE="${AWS_CODE_DEPLOY_FILENAME}"
+  success "Using a pre-assembled deployment revision"
+else
+  if [ ! -d "$APP_SOURCE" ]; then
+    error "The specified source directory \"${APP_SOURCE}\" does not exist."
+    exit 1
+  fi
+  if [ ! -e "$APP_SOURCE/appspec.yml" ]; then
+    error "The specified source directory \"${APP_SOURCE}\" does not contain an \"appspec.yml\" in the application root."
+    exit 1
+  fi
+  if ! typeExists "zip"; then
+    note "Installing zip binaries ..."
+    sudo apt-get install -y zip
+    note "Zip binaries installed."
+  fi
+  runCommand "cd \"$APP_SOURCE\" && zip -rq \"${APP_LOCAL_TEMP_FILE}\" ." \
+             "Unable to compress \"$APP_SOURCE\""
+  DEPLOYMENT_COMPRESS_FILESIZE=$(ls -lah "${APP_LOCAL_TEMP_FILE}" | awk '{ print $5}')
+  success "Successfully compressed \"$APP_SOURCE\" ($DEPLOYMENT_COMPRESS_ORIG_DIR_SIZE) into \"$APP_LOCAL_FILE\" ($DEPLOYMENT_COMPRESS_FILESIZE)"
 
 
 

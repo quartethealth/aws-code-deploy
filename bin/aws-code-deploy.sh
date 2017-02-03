@@ -192,10 +192,6 @@ else
 fi
 
 if [ -z "$AWS_CODE_DEPLOY_SECRET" ]; then
-  if [ ! -e ~/.aws/config ]; then
-    error "Please configure AWS credentials or explicitly set the \"\$AWS_CODE_DEPLOY_SECRET\" variable"
-    exit 1    
-  fi
   if [ $(aws configure get aws_secret_access_key | wc -l) -lt 1 ]; then
     error "Unable to find \"aws_secret_access_key\" in ~/.aws/config. Please configure AWS credentials or explicitly set the \"\$AWS_CODE_DEPLOY_SECRET\" variable"
     exit 1  
@@ -208,7 +204,7 @@ fi
 
 if [ -z "$AWS_CODE_DEPLOY_REGION" ]; then
   if [ -e ~/.aws/config ]; then
-    if [ $(grep region ~/.aws/config | wc -l) -lt 1 ]; then
+    if [ $(aws configure get region | wc -l) -lt 1 ]; then
       warnNotice "Unable to configure AWS region."
     else
       success "AWS Region already configured."

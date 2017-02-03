@@ -181,11 +181,7 @@ fi
 
 h1 "Step 2: Configuring AWS"
 if [ -z "$AWS_CODE_DEPLOY_KEY" ]; then
-  if [ ! -e ~/.aws/config ]; then
-    error "Please configure AWS credentials or explicitly set the \"\$AWS_CODE_DEPLOY_KEY\" variable"
-    exit 1    
-  fi
-  if [ $(grep aws_access_key_id ~/.aws/config | wc -l) -lt 1 ]; then
+  if [ $(aws configure get aws_access_key_id | wc -l) -lt 1 ]; then
     error "Unable to find \"aws_access_key_id\" in ~/.aws/config. Please configure AWS credentials or explicitly set the \"\$AWS_CODE_DEPLOY_KEY\" variable"
     exit 1  
   fi
@@ -200,7 +196,7 @@ if [ -z "$AWS_CODE_DEPLOY_SECRET" ]; then
     error "Please configure AWS credentials or explicitly set the \"\$AWS_CODE_DEPLOY_SECRET\" variable"
     exit 1    
   fi
-  if [ $(grep aws_secret_access_key ~/.aws/config | wc -l) -lt 1 ]; then
+  if [ $(aws configure get aws_secret_access_key | wc -l) -lt 1 ]; then
     error "Unable to find \"aws_secret_access_key\" in ~/.aws/config. Please configure AWS credentials or explicitly set the \"\$AWS_CODE_DEPLOY_SECRET\" variable"
     exit 1  
   fi

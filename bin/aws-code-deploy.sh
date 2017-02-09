@@ -173,50 +173,6 @@ else
 fi
 
 
-
-# ----- Configure -----
-# see documentation
-#    http://docs.aws.amazon.com/cli/latest/reference/configure/index.html
-# ----------------------
-
-h1 "Step 2: Configuring AWS"
-if [ -z "$AWS_CODE_DEPLOY_KEY" ]; then
-  if [ $(aws configure get aws_access_key_id | wc -l) -lt 1 ]; then
-    error "Unable to find \"aws_access_key_id\" in ~/.aws/config. Please configure AWS credentials or explicitly set the \"\$AWS_CODE_DEPLOY_KEY\" variable"
-    exit 1  
-  fi
-  success "AWS Access Key already configured."
-else
-  CONFIGURE_KEY_OUTPUT=$(aws configure set aws_access_key_id $AWS_CODE_DEPLOY_KEY 2>&1)
-  success "Successfully configured AWS Access Key ID."
-fi
-
-if [ -z "$AWS_CODE_DEPLOY_SECRET" ]; then
-  if [ $(aws configure get aws_secret_access_key | wc -l) -lt 1 ]; then
-    error "Unable to find \"aws_secret_access_key\" in ~/.aws/config. Please configure AWS credentials or explicitly set the \"\$AWS_CODE_DEPLOY_SECRET\" variable"
-    exit 1  
-  fi
-  success "AWS Secret Access Key already configured."
-else
-  CONFIGURE_KEY_OUTPUT=$(aws configure set aws_secret_access_key $AWS_CODE_DEPLOY_SECRET 2>&1)
-  success "Successfully configured AWS Secret Access Key ID."
-fi
-
-if [ -z "$AWS_CODE_DEPLOY_REGION" ]; then
-  if [ -e ~/.aws/config ]; then
-    if [ $(aws configure get region | wc -l) -lt 1 ]; then
-      warnNotice "Unable to configure AWS region."
-    else
-      success "AWS Region already configured."
-    fi
-  fi
-else
-  CONFIGURE_REGION_OUTPUT=$(aws configure set default.region $AWS_CODE_DEPLOY_REGION 2>&1)
-  success "Successfully configured AWS default region."
-fi
-
-
-
 # ----- Application -----
 # see documentation
 #    http://docs.aws.amazon.com/cli/latest/reference/deploy/get-application.html
@@ -227,7 +183,7 @@ APPLICATION_NAME="$AWS_CODE_DEPLOY_APPLICATION_NAME"
 APPLICATION_VERSION=${AWS_CODE_DEPLOY_APPLICATION_VERSION:-${GIT_COMMIT:0:7}}
 
 # Check application exists
-h1 "Step 3: Checking Application"
+h1 "Step 2: Checking Application"
 APPLICATION_EXISTS="aws deploy get-application --application-name $APPLICATION_NAME"
 info "$APPLICATION_EXISTS"
 APPLICATION_EXISTS_OUTPUT=$($APPLICATION_EXISTS 2>&1)
@@ -253,7 +209,7 @@ DEPLOYMENT_CONFIG_NAME=${AWS_CODE_DEPLOY_DEPLOYMENT_CONFIG_NAME:-CodeDeployDefau
 MINIMUM_HEALTHY_HOSTS=${AWS_CODE_DEPLOY_MINIMUM_HEALTHY_HOSTS:-type=FLEET_PERCENT,value=75}
 
 # Check deployment config exists
-h1 "Step 4: Checking Deployment Config"
+h1 "Step 3: Checking Deployment Config"
 DEPLOYMENT_CONFIG_EXISTS="aws deploy get-deployment-config --deployment-config-name $DEPLOYMENT_CONFIG_NAME"
 info "$DEPLOYMENT_CONFIG_EXISTS"
 DEPLOYMENT_CONFIG_EXISTS_OUTPUT=$($DEPLOYMENT_CONFIG_EXISTS 2>&1)
@@ -282,7 +238,7 @@ EC2_TAG_FILTERS="$AWS_CODE_DEPLOY_EC2_TAG_FILTERS"
 SERVICE_ROLE_ARN="$AWS_CODE_DEPLOY_SERVICE_ROLE_ARN"
 
 # Check deployment group exists
-h1 "Step 5: Checking Deployment Group"
+h1 "Step 4: Checking Deployment Group"
 DEPLOYMENT_GROUP_EXISTS="aws deploy get-deployment-group --application-name $APPLICATION_NAME --deployment-group-name $DEPLOYMENT_GROUP"
 info "$DEPLOYMENT_GROUP_EXISTS"
 DEPLOYMENT_GROUP_EXISTS_OUTPUT=$($DEPLOYMENT_GROUP_EXISTS 2>&1)
@@ -319,7 +275,7 @@ APP_LOCAL_FILE="${AWS_CODE_DEPLOY_S3_FILENAME%.*}.zip"
 DEPLOYMENT_COMPRESS_ORIG_DIR_SIZE=$(du -hs $APP_SOURCE | awk '{ print $1}')
 APP_LOCAL_TEMP_FILE="/tmp/$APP_LOCAL_FILE"
 
-h1 "Step 6: Compressing Source Contents"
+h1 "Step 5: Compressing Source Contents"
 if [ -n "$AWS_CODE_DEPLOY_FILENAME" ]; then
   if [ ! -e "$AWS_CODE_DEPLOY_FILENAME" ]; then
     error "The specified revision \"${AWS_CODE_DEPLOY_FILENAME}\" does not exist."
@@ -352,7 +308,7 @@ fi
 # ----- Push Bundle to S3 -----
 # see documentation  http://docs.aws.amazon.com/cli/latest/reference/s3/cp.html
 # ----------------------
-h1 "Step 7: Copying Bundle to S3"
+h1 "Step 6: Copying Bundle to S3"
 S3_CP="aws s3 cp"
 S3_BUCKET="$AWS_CODE_DEPLOY_S3_BUCKET"
 S3_FULL_BUCKET="$S3_BUCKET"
@@ -377,7 +333,7 @@ runCommand "$S3_CP \"$APP_LOCAL_TEMP_FILE\" \"s3://$S3_FULL_BUCKET/$APP_LOCAL_FI
 # ----- Limit Deploy Revisions per Bucket/Key  -----
 # see documentation  http://docs.aws.amazon.com/cli/latest/reference/s3/cp.html
 # ----------------------
-h1 "Step 8: Limiting Deploy Revisions per Bucket/Key"
+h1 "Step 7: Limiting Deploy Revisions per Bucket/Key"
 S3_DEPLOY_LIMIT=${AWS_CODE_DEPLOY_S3_LIMIT_BUCKET_FILES:-0}
 if [ $S3_DEPLOY_LIMIT -lt 1 ]; then
   success "Skipping deploy revision max files per bucket/key."
@@ -420,11 +376,10 @@ else
 fi
 
 
-
 # ----- Register Revision -----
 # see documentation http://docs.aws.amazon.com/cli/latest/reference/deploy/register-application-revision.html
 # ----------------------
-h1 "Step 9: Registering Revision"
+h1 "Step 8: Registering Revision"
 
 BUNDLE_TYPE=${APP_LOCAL_FILE##*.}
 REGISTER_APP_CMD="aws deploy register-application-revision --application-name \"$APPLICATION_NAME\""
@@ -451,7 +406,7 @@ runCommand "$REGISTER_APP_CMD" \
 # see documentation http://docs.aws.amazon.com/cli/latest/reference/deploy/create-deployment.html
 # ----------------------
 DEPLOYMENT_DESCRIPTION="$AWS_CODE_DEPLOY_DEPLOYMENT_DESCRIPTION"
-h1 "Step 10: Creating Deployment"
+h1 "Step 9: Creating Deployment"
 DEPLOYMENT_CMD="aws deploy create-deployment --application-name $APPLICATION_NAME --deployment-config-name $DEPLOYMENT_CONFIG_NAME --deployment-group-name $DEPLOYMENT_GROUP --s3-location $S3_LOCATION"
 
 if [ -n "$DEPLOYMENT_DESCRIPTION" ]; then
